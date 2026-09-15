@@ -30,6 +30,10 @@
 # to enumerate models, and both primus_* dockerfiles COPY the tree into the image. Without
 # it, discovery reports zero models instead of a missing prerequisite.
 #
+# Default pin is jax-maxtext-v26.7, matching docker/primus_maxtext's
+# rocm/jax-training:maxtext-v26.7 base (MaxText release/v26.7 + JAX 0.11 MaxDiffusion fixes).
+# Override PRIMUS_REF for another branch or commit.
+#
 # Run on the host, from anywhere:
 #   tools/fetch_primus.sh
 #
@@ -38,7 +42,7 @@
 set -uo pipefail
 
 PRIMUS_URL="${PRIMUS_URL:-https://github.com/AMD-AGI/Primus}"
-PRIMUS_REF="${PRIMUS_REF:-main}"
+PRIMUS_REF="${PRIMUS_REF:-jax-maxtext-v26.7}"
 
 MAD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PRIMUS_DIR="${PRIMUS_DIR:-$MAD_ROOT/scripts/Primus}"
@@ -49,7 +53,11 @@ die() { echo "[fetch-primus] ERROR: $*" >&2; exit 1; }
 command -v git >/dev/null || die "git not found on PATH."
 
 if git -C "$PRIMUS_DIR" rev-parse --git-dir >/dev/null 2>&1; then
-  log "already checked out at $PRIMUS_DIR"
+  log "already checked out at $PRIMUS_DIR; syncing $PRIMUS_REF"
+  git -C "$PRIMUS_DIR" fetch "$PRIMUS_URL" "$PRIMUS_REF" \
+    || die "fetch of $PRIMUS_REF from $PRIMUS_URL failed."
+  git -C "$PRIMUS_DIR" checkout --detach FETCH_HEAD \
+    || die "checkout of $PRIMUS_REF failed. Commit or stash local changes in $PRIMUS_DIR and re-run."
 elif [[ -d "$PRIMUS_DIR" ]] && [[ -z "$(ls -A "$PRIMUS_DIR" 2>/dev/null)" ]]; then
   # Empty dir left by an uninitialized git submodule; remove so clone succeeds.
   rmdir "$PRIMUS_DIR"

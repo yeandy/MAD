@@ -36,7 +36,7 @@ bash tools/fetch_primus.sh
 # or: git submodule update --init scripts/Primus
 ```
 
-`tools/fetch_primus.sh` is idempotent. Override `PRIMUS_URL`, `PRIMUS_REF`, or `PRIMUS_DIR` for a fork, another branch or commit, or another location.
+`tools/fetch_primus.sh` is idempotent. It clones (or syncs an existing checkout to) Primus `jax-maxtext-v26.7`, the branch that matches `rocm/jax-training:maxtext-v26.7`. Override `PRIMUS_URL`, `PRIMUS_REF`, or `PRIMUS_DIR` for a fork, another branch or commit, or another location.
 
 Cloning MAD with `--recursive` is **not** required. Primus `third_party/` submodules are not used for MAD builds: the base image ships `/workspace/maxtext` and `/workspace/maxdiffusion`, and each `run.sh` pins `MAXTEXT_PATH` / `MAXDIFFUSION_PATH` at those paths so a mismatched `third_party` copy cannot be picked up.
 
@@ -87,7 +87,7 @@ madengine run --tags jax-maxdiffusion/maxdiffusion_MI300X_flux_dev-pretrain --ke
 
 `tools/run_models.py` remains a drop-in alternative to `madengine run` for the same `--tags`.
 
-MAD starts a container named `container_ci-<mad_model>`. Inside it, `run.sh` sets `EXP` from `--config_path` and calls Primus `examples/run_pretrain.sh` with `BACKEND=MaxText` or `BACKEND=MaxDiffusion`, skipping the per-run `pip install` (`PRIMUS_SKIP_PIP=1`) so a launch stays off the network. `MAD_SECRETS_HFTOKEN` is forwarded to Primus as `HF_TOKEN`.
+MAD starts a container named `container_ci-<mad_model>`. Inside it, `run.sh` sets `EXP` from `--config_path` and runs `primus-cli direct -- train pretrain --config …` with `BACKEND=MaxText` or `BACKEND=MaxDiffusion`, skipping the per-run `pip install` (`PRIMUS_SKIP_PIP=1`) so a launch stays off the network. `MAD_SECRETS_HFTOKEN` is forwarded to Primus as `HF_TOKEN`.
 
 Performance is parsed by `extract_maxtext_perf.py` / `extract_maxdiffusion_perf.py` into `primus_perf_output.csv`, which madengine collects as `multiple_results` and aggregates into `~/MAD/perf.csv`. Values are averaged after skipping warmup steps and reported per GPU. MaxText writes `tok_per_s_per_gpu` and `TFLOPS_per_gpu`. MaxDiffusion copies Primus's published per-device rates: `fps_per_gpu` (samples), `images_per_sec_per_gpu` (frames, when Primus emits them), `tok_per_s_per_gpu` (when Primus emits tokens), and `TFLOPS_per_gpu`.
 

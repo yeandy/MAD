@@ -60,7 +60,7 @@ LABEL mad.launcher=primus
 RUN rm -rf /workspace/Primus
 COPY scripts/Primus/ /workspace/Primus/
 
-RUN test -f /workspace/Primus/examples/run_pretrain.sh
+RUN test -f /workspace/Primus/primus-cli
 RUN test -f /workspace/Primus/requirements-jax.txt
 
 # Prove the base's stack is really there, so a wrong base fails the build instead
