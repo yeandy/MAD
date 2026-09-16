@@ -64,7 +64,10 @@ madengine discover --tags jax              # both
 madengine discover --tags nanoo_fp8        # MI300X-style quantized models
 ```
 
-`<DEVICE>` is whatever directory names exist in the checkout — currently `MI300X`, `MI325X`, and `MI355X`. Discovery sets `skip_gpu_arch` so MI300X configs are skipped on gfx950 hosts and MI355X configs on gfx942, which lets one discovery serve both host types. Only those two devices are mapped, so MI325X configs are never auto-skipped.
+`<DEVICE>` is whatever directory names exist in the checkout — currently `MI300X`, `MI325X`, and `MI355X`. Two filters apply:
+
+- **ISA (`skip_gpu_arch`)** — madengine compares `gfx942` vs `gfx950`. That drops MI355X configs on MI300/MI325 and MI300X/MI325X configs on MI355. It cannot tell MI300X from MI325X: both are gfx942.
+- **Product SKU** — discovery reads the `rocminfo` marketing name and only registers the matching Primus directory (`MI325X/` on an MI325, `MI300X/` on an MI300). Those YAMLs are not copies (MI325 uses a larger `per_device_batch_size`). Override with `JAX_HOST_DEVICE=MI325X` or `JAX_HOST_DEVICE=all`.
 
 Each backend also registers a `default` model (`jax-maxtext/default`, `jax-maxdiffusion/default`) as a smoke test, pinned to one config — Llama 2 7B bf16 on MI300X and WAN 2.1 1.3B on MI355X respectively. They are tagged only `default`, so they never appear in `--tags maxtext`, `--tags maxdiffusion`, or `--tags jax` sweeps and cannot duplicate the per-YAML entry. Reach them by full name:
 
